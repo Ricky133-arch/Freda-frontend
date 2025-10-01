@@ -7,10 +7,11 @@ import { Button, Typography, Box, Paper, Avatar } from "@mui/material";
 export default function Welcome() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const handleLogout = () => {
     logout();
-    navigate("/", { replace: true }); // send back to login/signup
+    navigate("/", { replace: true });
   };
 
   return (
@@ -39,7 +40,7 @@ export default function Welcome() {
               transition={{ duration: 0.5 }}
             >
               <Avatar
-                src={`http://localhost:5000${user.profilePhoto}?t=${Date.now()}`}
+                src={user?.profilePhoto ? `${API_BASE}${user.profilePhoto}?t=${Date.now()}` : ""}
                 alt={user?.name || "User"}
                 sx={{
                   width: 100,

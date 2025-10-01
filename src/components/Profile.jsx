@@ -27,6 +27,7 @@ export default function Profile() {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -101,7 +102,7 @@ export default function Profile() {
         {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
         <Avatar
-          src={user?.profilePhoto ? `http://localhost:5000${user.profilePhoto}?t=${Date.now()}` : ""}
+          src={user?.profilePhoto ? `${API_BASE}${user.profilePhoto}?t=${Date.now()}` : ""}
           alt="Profile"
           sx={{
             width: 120,

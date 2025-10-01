@@ -36,6 +36,7 @@ export default function Chat() {
   const [selectedUser, setSelectedUser] = useState(null);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -91,7 +92,7 @@ export default function Chat() {
   };
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000');
+    socketRef.current = io(API_BASE, { withCredentials: true });
     socketRef.current.emit('joinChat', chatId);
 
     socketRef.current.on('newMessage', (message) => {
@@ -313,7 +314,7 @@ export default function Chat() {
                           <Avatar
                             src={
                               item.data.sender.profilePhoto
-                                ? `http://localhost:5000${item.data.sender.profilePhoto}?t=${Date.now()}`
+                                ? `${API_BASE}${item.data.sender.profilePhoto}?t=${Date.now()}`
                                 : undefined
                             }
                             alt={item.data.sender.name}
@@ -394,7 +395,7 @@ export default function Chat() {
                             <Avatar
                               src={
                                 item.data.sender.profilePhoto
-                                  ? `http://localhost:5000${item.data.sender.profilePhoto}?t=${Date.now()}`
+                                  ? `${API_BASE}${item.data.sender.profilePhoto}?t=${Date.now()}`
                                   : undefined
                               }
                               alt={item.data.sender.name}
@@ -629,7 +630,7 @@ export default function Chat() {
               <Avatar
                 src={
                   selectedUser.profilePhoto
-                    ? `http://localhost:5000${selectedUser.profilePhoto}?t=${Date.now()}`
+                    ? `${API_BASE}${selectedUser.profilePhoto}?t=${Date.now()}`
                     : undefined
                 }
                 alt={selectedUser.name}
