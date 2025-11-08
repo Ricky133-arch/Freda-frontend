@@ -12,7 +12,7 @@ export default defineConfig({
     // Proxy only for local dev — uses VITE_API_URL in prod
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',  // Only used in dev
+        target: 'https://freda-backend.onrender.com',  // Only used in dev
         changeOrigin: true,
         secure: false,
       },
