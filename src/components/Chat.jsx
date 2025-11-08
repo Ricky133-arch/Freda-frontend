@@ -36,7 +36,7 @@ export default function Chat() {
   const [selectedUser, setSelectedUser] = useState(null);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE = import.meta.env.VITE_API_URL;
 
   // Scroll to bottom
   const scrollToBottom = () => {
