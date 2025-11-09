@@ -17,7 +17,7 @@ import Cropper from "react-easy-crop";
 import { getCroppedImg } from "./cropImage";
 
 export default function Profile() {
-  const { user, updateProfile, setUser } = useContext(AuthContext); // Added setUser
+  const { user, updateProfile } = useContext(AuthContext);
   const [name, setName] = useState(user?.name || "");
   const [photo, setPhoto] = useState(null);
   const [error, setError] = useState("");
@@ -66,15 +66,8 @@ export default function Profile() {
       if (photo) {
         formData.append("photo", photo);
       }
-      const res = await updateProfile(formData);
-
-      // Fixed: Update user from server response
-      setUser(res.data.user);
-
-      // Fixed: Clear preview so server URL is used
-      setPhoto(null);
-
-      setSuccess("Profile updated successfully");
+      await updateProfile(formData);
+      setSuccess("Profile updated successfully ✅");
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Failed to update profile.";
       setError(errorMessage);
@@ -109,13 +102,7 @@ export default function Profile() {
         {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
         <Avatar
-          src={
-            photo
-              ? URL.createObjectURL(photo) // Show cropped preview
-              : user?.profilePhoto
-              ? `${API_BASE}${user.profilePhoto}?t=${Date.now()}`
-              : ""
-          }
+          src={user?.profilePhoto ? `${API_BASE}${user.profilePhoto}?t=${Date.now()}` : ""}
           alt="Profile"
           sx={{
             width: 120,
@@ -159,7 +146,7 @@ export default function Profile() {
 
           {photo && (
             <Typography variant="body2" sx={{ mt: 1, color: "green" }}>
-              Cropped image selected
+              ✅ Cropped image selected
             </Typography>
           )}
 
