@@ -1,17 +1,46 @@
 // src/components/Welcome.jsx
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { motion } from "framer-motion";
-import { Button, Typography, Box, Avatar, IconButton } from "@mui/material";
+import {
+  Button,
+  Typography,
+  Box,
+  Avatar,
+  IconButton,
+  Switch,
+} from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ChatIcon from "@mui/icons-material/Chat";
 import PersonIcon from "@mui/icons-material/Person";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
 
 export default function Welcome() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL;
+
+  // Dark mode state
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Detect system preference
+  useEffect(() => {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setDarkMode(prefersDark);
+  }, []);
+
+  // Apply dark mode to root
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      document.body.style.background = "#0f172a";
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.body.style.background = "";
+    }
+  }, [darkMode]);
 
   const handleLogout = () => {
     logout();
@@ -19,7 +48,49 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+    <div
+      className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
+        darkMode
+          ? "bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900"
+          : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
+      }`}
+    >
+      {/* Dark Mode Toggle (Top-Right) */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          bgcolor: darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+          borderRadius: 3,
+          p: 1,
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <LightModeIcon
+          sx={{ fontSize: 18, color: darkMode ? "#94a3b8" : "#6366f1" }}
+        />
+        <Switch
+          checked={darkMode}
+          onChange={() => setDarkMode(!darkMode)}
+          size="small"
+          sx={{
+            "& .MuiSwitch-thumb": {
+              bgcolor: darkMode ? "#8b5cf6" : "#6366f1",
+            },
+            "& .MuiSwitch-track": {
+              bgcolor: darkMode ? "#475569" : "#cbd5e1",
+            },
+          }}
+        />
+        <DarkModeIcon
+          sx={{ fontSize: 18, color: darkMode ? "#8b5cf6" : "#94a3b8" }}
+        />
+      </Box>
+
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -29,12 +100,17 @@ export default function Welcome() {
         {/* Glass Card */}
         <Box
           sx={{
-            bgcolor: "rgba(255, 255, 255, 0.88)",
+            bgcolor: darkMode
+              ? "rgba(30, 41, 59, 0.9)"
+              : "rgba(255, 255, 255, 0.88)",
             backdropFilter: "blur(16px)",
             borderRadius: 5,
             p: { xs: 4, sm: 6 },
-            boxShadow: "0 12px 32px rgba(0, 0, 0, 0.1)",
+            boxShadow: darkMode
+              ? "0 12px 32px rgba(0, 0, 0, 0.3)"
+              : "0 12px 32px rgba(0, 0, 0, 0.1)",
             textAlign: "center",
+            border: darkMode ? "1px solid rgba(255,255,255,0.1)" : "none",
           }}
         >
           {/* Avatar */}
@@ -55,12 +131,21 @@ export default function Welcome() {
                 height: 120,
                 mx: "auto",
                 mb: 3,
-                border: "6px solid white",
-                boxShadow: "0 8px 20px rgba(99, 102, 241, 0.2)",
+                border: "6px solid",
+                borderColor: darkMode ? "#1e293b" : "white",
+                boxShadow: darkMode
+                  ? "0 8px 20px rgba(0,0,0,0.4)"
+                  : "0 8px 20px rgba(99, 102, 241, 0.2)",
               }}
             >
               {!user?.profilePhoto && (
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 w-full h-full rounded-full" />
+                <div
+                  className={`w-full h-full rounded-full ${
+                    darkMode
+                      ? "bg-gradient-to-br from-indigo-600 to-purple-700"
+                      : "bg-gradient-to-br from-indigo-500 to-purple-600"
+                  }`}
+                />
               )}
             </Avatar>
           </motion.div>
@@ -70,7 +155,9 @@ export default function Welcome() {
             variant="h4"
             sx={{
               fontWeight: 700,
-              background: "linear-gradient(90deg, #6366f1, #a855f7)",
+              background: darkMode
+                ? "linear-gradient(90deg, #a855f7, #ec4899)"
+                : "linear-gradient(90deg, #6366f1, #a855f7)",
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
               color: "transparent",
@@ -81,8 +168,11 @@ export default function Welcome() {
           </Typography>
           <Typography
             variant="body1"
-            color="text.secondary"
-            sx={{ mb: 5, fontSize: "1.1rem" }}
+            sx={{
+              mb: 5,
+              fontSize: "1.1rem",
+              color: darkMode ? "#cbd5e1" : "text.secondary",
+            }}
           >
             Ready to connect and chat?
           </Typography>
@@ -103,10 +193,16 @@ export default function Welcome() {
                 fontWeight: 600,
                 textTransform: "none",
                 fontSize: "1.1rem",
-                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                boxShadow: "0 6px 16px rgba(99, 102, 241, 0.3)",
+                background: darkMode
+                  ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
+                  : "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                boxShadow: darkMode
+                  ? "0 6px 16px rgba(99, 102, 241, 0.4)"
+                  : "0 6px 16px rgba(99, 102, 241, 0.3)",
                 "&:hover": {
-                  background: "linear-gradient(135deg, #5b5ce0, #7c3aed)",
+                  background: darkMode
+                    ? "linear-gradient(135deg, #5b5ce0, #7c3aed)"
+                    : "linear-gradient(135deg, #5b5ce0, #7c3aed)",
                 },
               }}
             >
@@ -127,11 +223,13 @@ export default function Welcome() {
                 fontWeight: 600,
                 textTransform: "none",
                 fontSize: "1.1rem",
-                borderColor: "#6366f1",
-                color: "#6366f1",
+                borderColor: darkMode ? "#8b5cf6" : "#6366f1",
+                color: darkMode ? "#8b5cf6" : "#6366f1",
                 "&:hover": {
-                  borderColor: "#4f46e5",
-                  bgcolor: "rgba(99, 102, 241, 0.08)",
+                  borderColor: darkMode ? "#a855f7" : "#4f46e5",
+                  bgcolor: darkMode
+                    ? "rgba(139, 92, 246, 0.2)"
+                    : "rgba(99, 102, 241, 0.08)",
                 },
               }}
             >
@@ -154,7 +252,9 @@ export default function Welcome() {
                 textTransform: "none",
                 fontSize: "1rem",
                 "&:hover": {
-                  bgcolor: "rgba(239, 68, 68, 0.08)",
+                  bgcolor: darkMode
+                    ? "rgba(239, 68, 68, 0.2)"
+                    : "rgba(239, 68, 68, 0.08)",
                 },
               }}
             >
