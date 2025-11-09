@@ -1,6 +1,5 @@
-// src/components/Chat.jsx
 import { useState, useEffect, useContext, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
+import { useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,12 +22,10 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // New
 import api from '../utils/api';
 
 export default function Chat() {
   const { chatId } = useParams();
-  const navigate = useNavigate(); // New
   const { user } = useContext(AuthContext);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -41,34 +38,6 @@ export default function Chat() {
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const API_BASE = import.meta.env.VITE_API_URL;
-
-  // New: Check if DM (chatId format: "userId1-userId2")
-  const isDM = chatId && chatId.includes('-') && chatId.split('-').length === 2;
-  const [otherUser, setOtherUser] = useState(null); // New: for DM header
-
-  // New: Generate DM room ID
-  const generateDMId = (user1Id, user2Id) => {
-    const ids = [user1Id, user2Id].sort();
-    return `${ids[0]}-${ids[1]}`;
-  };
-
-  // New: Open DM
-  const openDM = async (tappedUserId) => {
-    if (isDM) return; // Prevent DM from DM
-    const dmId = generateDMId(user.id, tappedUserId);
-    try {
-      const res = await api.get(`/user/${tappedUserId}`);
-      setOtherUser(res.data);
-      navigate(`/chat/${dmId}`);
-    } catch (err) {
-      console.error('Fetch user error:', err);
-    }
-  };
-
-  // New: Go back to group
-  const goBackToGroup = () => {
-    navigate('/chat/default-chat');
-  };
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -148,20 +117,10 @@ export default function Chat() {
         setLoading(false);
       });
 
-    // New: Fetch other user in DM
-    if (isDM) {
-      const otherId = chatId.split('-').find(id => id !== user.id);
-      if (otherId) {
-        api.get(`/user/${otherId}`)
-          .then(res => setOtherUser(res.data))
-          .catch(() => {});
-      }
-    }
-
     return () => {
       socketRef.current.disconnect();
     };
-  }, [chatId, isDM, user.id]);
+  }, [chatId]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -200,18 +159,12 @@ export default function Chat() {
   };
 
   const handleProfileClick = async (userId) => {
-    if (isDM) {
-      // In DM: show profile
-      try {
-        const res = await api.get(`/user/${userId}`);
-        setSelectedUser(res.data);
-        setProfileDialogOpen(true);
-      } catch (err) {
-        console.error('Fetch user profile error:', err);
-      }
-    } else {
-      // In group: open DM
-      openDM(userId);
+    try {
+      const res = await api.get(`/user/${userId}`);
+      setSelectedUser(res.data);
+      setProfileDialogOpen(true);
+    } catch (err) {
+      console.error('Fetch user profile error:', err);
     }
   };
 
@@ -246,29 +199,20 @@ export default function Chat() {
           mb: 2,
           bgcolor: 'white',
           boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
         }}
       >
-        {isDM && (
-          <IconButton onClick={goBackToGroup} sx={{ color: '#6366f1' }}>
-            <ArrowBackIcon />
-          </IconButton>
-        )}
         <Typography
           variant="h5"
           sx={{
             fontWeight: 700,
-            textAlign: isDM ? 'left' : 'center',
+            textAlign: 'center',
             background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             color: 'transparent',
-            flex: 1,
           }}
         >
-          {isDM ? `DM with ${otherUser?.name || 'User'}` : 'Group Chat'}
+          Group Chat
         </Typography>
       </Paper>
 
