@@ -8,7 +8,6 @@ import {
   Typography,
   Box,
   Avatar,
-  IconButton,
   Switch,
 } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -55,42 +54,6 @@ export default function Welcome() {
           : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
       }`}
     >
-      {/* Dark Mode Toggle (Top-Right) */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          bgcolor: darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-          borderRadius: 3,
-          p: 1,
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <LightModeIcon
-          sx={{ fontSize: 18, color: darkMode ? "#94a3b8" : "#6366f1" }}
-        />
-        <Switch
-          checked={darkMode}
-          onChange={() => setDarkMode(!darkMode)}
-          size="small"
-          sx={{
-            "& .MuiSwitch-thumb": {
-              bgcolor: darkMode ? "#8b5cf6" : "#6366f1",
-            },
-            "& .MuiSwitch-track": {
-              bgcolor: darkMode ? "#475569" : "#cbd5e1",
-            },
-          }}
-        />
-        <DarkModeIcon
-          sx={{ fontSize: 18, color: darkMode ? "#8b5cf6" : "#94a3b8" }}
-        />
-      </Box>
-
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -100,6 +63,7 @@ export default function Welcome() {
         {/* Glass Card */}
         <Box
           sx={{
+            position: "relative",
             bgcolor: darkMode
               ? "rgba(30, 41, 59, 0.9)"
               : "rgba(255, 255, 255, 0.88)",
@@ -113,6 +77,55 @@ export default function Welcome() {
             border: darkMode ? "1px solid rgba(255,255,255,0.1)" : "none",
           }}
         >
+          {/* Premium Dark Mode Toggle – Inside Card, Top-Right */}
+          <Box
+            sx={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              bgcolor: darkMode ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.05)",
+              borderRadius: 3,
+              p: 1,
+              backdropFilter: "blur(8px)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              transition: "all 0.3s ease",
+            }}
+          >
+            <LightModeIcon
+              sx={{
+                fontSize: 16,
+                color: darkMode ? "#94a3b8" : "#6366f1",
+              }}
+            />
+            <Switch
+              checked={darkMode}
+              onChange={() => setDarkMode(!darkMode)}
+              size="small"
+              sx={{
+                "& .MuiSwitch-thumb": {
+                  width: 14,
+                  height: 14,
+                  bgcolor: darkMode ? "#8b5cf6" : "#6366f1",
+                },
+                "& .MuiSwitch-track": {
+                  width: 36,
+                  height: 20,
+                  bgcolor: darkMode ? "#475569" : "#e2e8f0",
+                  opacity: 1,
+                },
+              }}
+            />
+            <DarkModeIcon
+              sx={{
+                fontSize: 16,
+                color: darkMode ? "#8b5cf6" : "#94a3b8",
+              }}
+            />
+          </Box>
+
           {/* Avatar */}
           <motion.div
             initial={{ scale: 0.8 }}
