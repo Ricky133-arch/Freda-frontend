@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
           id: decoded.id,
           email: decoded.email,
           name: decoded.name,
-          profilePhoto: decoded.profilePhoto || null,
+          profilePhoto: decoded.profilePhoto || null, // Fixed: Use profilePhoto from token
         });
       } catch (err) {
         console.error('Token decode error:', err);
@@ -101,23 +101,30 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         throw new Error('Session expired. Please log in again.');
       }
+
       const res = await api.put('/auth/profile', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
         },
       });
+
       console.log('Profile update response:', res.data);
-      setUser({
+
+      // Fixed: Update user with fresh data from server
+      const updatedUser = {
         id: res.data.user.id,
         email: res.data.user.email,
         name: res.data.user.name,
         profilePhoto: res.data.user.profilePhoto || null,
-      });
-      // Update token if backend sends a new one
+      };
+      setUser(updatedUser);
+
+      // Fixed: Save new token if backend returns one
       if (res.data.token) {
         localStorage.setItem('token', res.data.token);
       }
+
       return res.data;
     } catch (err) {
       console.error('Profile update error:', {
@@ -134,7 +141,7 @@ export const AuthProvider = ({ children }) => {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, setUser, login, signup, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
