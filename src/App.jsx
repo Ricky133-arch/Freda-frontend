@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { useContext } from 'react';
@@ -18,6 +19,7 @@ function AppContent() {
           <Route path="/auth" element={!user ? <AuthForm /> : <Navigate to="/welcome" replace />} />
           <Route path="/welcome" element={user ? <Welcome /> : <Navigate to="/auth" replace />} />
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/auth" replace />} />
+          {/* DMs use the same Chat component */}
           <Route path="/chat/:chatId" element={user ? <Chat /> : <Navigate to="/auth" replace />} />
           <Route path="/" element={<Navigate to={user ? "/welcome" : "/auth"} replace />} />
         </Routes>
