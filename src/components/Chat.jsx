@@ -18,6 +18,7 @@ import {
   DialogTitle,
   Button,
   Tooltip,
+  Chip,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -97,7 +98,7 @@ export default function Chat() {
 
     socketRef.current.on('newMessage', (message) => {
       setMessages((prev) => [...prev, message]);
-      scrollToBottom();
+      setTimeout(scrollToBottom, 100);
     });
 
     socketRef.current.on('messageDeleted', ({ messageId }) => {
@@ -109,7 +110,7 @@ export default function Chat() {
       .then((res) => {
         setMessages(res.data);
         setLoading(false);
-        scrollToBottom();
+        setTimeout(scrollToBottom, 100);
       })
       .catch((err) => {
         console.error('Fetch messages error:', err);
@@ -177,72 +178,75 @@ export default function Chat() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      style={{
-        maxWidth: 600,
-        margin: 'auto',
-        padding: '20px',
+      sx={{
+        maxWidth: { xs: '100%', sm: 600 },
+        mx: 'auto',
+        px: { xs: 2, sm: 3 },
+        py: { xs: 2, sm: 3 },
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        background: 'linear-gradient(135deg, #5b21b6 0%, #2c5282 100%)',
-        backgroundSize: '200% 200%',
-        animation: 'gradientShift 20s ease infinite',
+        bgcolor: 'grey.50',
+        fontFamily: '"Inter", system-ui, sans-serif',
       }}
     >
-      <style>
-        {`
-          @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          html, body, #root {
-            background: transparent !important;
-          }
-        `}
-      </style>
-
+      {/* Header */}
       <Paper
         elevation={0}
         sx={{
-          flexGrow: 1,
-          p: 3,
           borderRadius: 3,
-          background: 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(8px)',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          flexDirection: 'column',
+          p: 2,
+          mb: 2,
+          bgcolor: 'white',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
         }}
       >
         <Typography
           variant="h5"
-          sx={{ mb: 2, fontWeight: 600, color: '#1e293b', textAlign: 'center' }}
+          sx={{
+            fontWeight: 700,
+            textAlign: 'center',
+            background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+          }}
         >
           Group Chat
         </Typography>
+      </Paper>
 
+      {/* Messages Container */}
+      <Paper
+        elevation={0}
+        sx={{
+          flexGrow: 1,
+          borderRadius: 3,
+          bgcolor: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={30} />
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress size={36} thickness={4.5} />
           </Box>
         ) : (
           <Box
             sx={{
               flexGrow: 1,
-              maxHeight: 500,
               overflowY: 'auto',
-              mb: 2,
-              px: 1,
-              '&::-webkit-scrollbar': { width: '6px' },
-              '&::-webkit-scrollbar-track': {
-                background: '#f1f3f5',
-                borderRadius: '8px',
-              },
+              p: { xs: 2, sm: 3 },
+              pb: 1,
+              '&::-webkit-scrollbar': { width: '8px' },
+              '&::-webkit-scrollbar-track': { background: '#f1f5f9', borderRadius: '8px' },
               '&::-webkit-scrollbar-thumb': {
-                background: '#64748b',
+                background: '#94a3b8',
                 borderRadius: '8px',
-                '&:hover': { background: '#475569' },
+                '&:hover': { background: '#64748b' },
               },
             }}
           >
@@ -260,56 +264,54 @@ export default function Chat() {
                       sx={{
                         display: 'flex',
                         justifyContent: 'center',
-                        my: 2,
+                        my: 3,
                         position: 'sticky',
                         top: 0,
                         zIndex: 1,
                       }}
                     >
-                      <Typography
-                        variant="caption"
+                      <Chip
+                        label={formatDateLabel(item.date)}
+                        size="small"
                         sx={{
-                          fontWeight: 500,
-                          fontSize: '0.8rem',
-                          color: '#ffffff',
-                          background: 'rgba(71, 85, 105, 0.8)',
-                          borderRadius: '12px',
+                          bgcolor: 'rgba(99, 102, 241, 0.15)',
+                          color: '#6366f1',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
                           px: 2,
                           py: 0.5,
-                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                          borderRadius: 3,
                         }}
-                      >
-                        {formatDateLabel(item.date)}
-                      </Typography>
+                      />
                     </Box>
                   </motion.div>
                 ) : (
                   <motion.div
                     key={item.data._id || index}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.32 }}
                   >
                     <Box
                       sx={{
                         display: 'flex',
                         justifyContent:
                           item.data.sender._id === user.id ? 'flex-end' : 'flex-start',
-                        mb: 1.5,
+                        mb: 2,
                         position: 'relative',
-                        '&:hover .delete-button': {
-                          opacity: 1,
-                        },
+                        '&:hover .delete-button': { opacity: 1 },
                       }}
                     >
                       <Box
                         sx={{
                           display: 'flex',
                           alignItems: 'flex-end',
-                          maxWidth: '70%',
+                          gap: 1.5,
+                          maxWidth: '78%',
                         }}
                       >
+                        {/* Avatar (others only) */}
                         {item.data.sender._id !== user.id && (
                           <Avatar
                             src={
@@ -319,28 +321,32 @@ export default function Chat() {
                             }
                             alt={item.data.sender.name}
                             sx={{
-                              mr: 1,
-                              width: 32,
-                              height: 32,
+                              width: 40,
+                              height: 40,
                               cursor: 'pointer',
-                              '&:hover': { opacity: 0.9 },
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                              transition: 'transform 0.2s',
+                              '&:hover': { transform: 'scale(1.05)' },
                             }}
                             onClick={() => handleProfileClick(item.data.sender._id)}
                           />
                         )}
 
-                        {/* Message bubble */}
+                        {/* Message Bubble */}
                         <Box
                           sx={{
-                            p: 1.5,
-                            borderRadius: '18px',
+                            p: { xs: 1.8, sm: 2 },
+                            borderRadius: '20px',
                             background:
                               item.data.sender._id === user.id
-                                ? 'linear-gradient(135deg, #6366f1, #3b82f6)'
-                                : '#f1f5f9',
+                                ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+                                : '#ffffff',
                             color:
                               item.data.sender._id === user.id ? 'white' : '#1e293b',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                            boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
+                            border: item.data.sender._id === user.id ? 'none' : '1px solid #e2e8f0',
+                            maxWidth: '100%',
+                            wordBreak: 'break-word',
                           }}
                         >
                           {/* Sender Name */}
@@ -348,12 +354,13 @@ export default function Chat() {
                             variant="caption"
                             sx={{
                               display: 'block',
-                              fontWeight: 600,
-                              mb: 0.5,
+                              fontWeight: 700,
+                              fontSize: '0.8rem',
+                              mb: 0.6,
                               color:
                                 item.data.sender._id === user.id
                                   ? 'rgba(255, 255, 255, 0.95)'
-                                  : '#0f172a',
+                                  : '#6366f1',
                               cursor: 'pointer',
                               '&:hover': { textDecoration: 'underline' },
                             }}
@@ -365,7 +372,11 @@ export default function Chat() {
                           {/* Message Text */}
                           <Typography
                             variant="body1"
-                            sx={{ fontSize: '0.95rem', lineHeight: 1.4 }}
+                            sx={{
+                              fontSize: { xs: '0.95rem', sm: '1rem' },
+                              lineHeight: 1.5,
+                              fontWeight: 500,
+                            }}
                           >
                             {item.data.text}
                           </Typography>
@@ -375,67 +386,43 @@ export default function Chat() {
                             variant="caption"
                             sx={{
                               display: 'block',
-                              mt: 0.5,
-                              fontSize: '0.75rem',
+                              mt: 0.8,
+                              fontSize: '0.7rem',
                               color:
                                 item.data.sender._id === user.id
-                                  ? 'rgba(255, 255, 255, 0.75)'
-                                  : '#475569',
+                                  ? 'rgba(255, 255, 255, 0.8)'
+                                  : '#94a3b8',
                             }}
                           >
                             {new Date(item.data.timestamp).toLocaleTimeString([], {
-                              hour: '2-digit',
+                              hour: 'numeric',
                               minute: '2-digit',
                             })}
                           </Typography>
                         </Box>
 
+                        {/* Delete Button (own message) */}
                         {item.data.sender._id === user.id && (
-                          <>
-                            <Avatar
-                              src={
-                                item.data.sender.profilePhoto
-                                  ? `${API_BASE}${item.data.sender.profilePhoto}?t=${Date.now()}`
-                                  : undefined
-                              }
-                              alt={item.data.sender.name}
+                          <Tooltip title="Delete Message" arrow>
+                            <IconButton
+                              className="delete-button"
+                              onClick={() => handleDeleteMessage(item.data._id)}
                               sx={{
-                                ml: 1,
-                                width: 32,
-                                height: 32,
-                                cursor: 'pointer',
-                                '&:hover': { opacity: 0.9 },
+                                opacity: 0,
+                                transition: 'all 0.25s ease',
+                                bgcolor: 'rgba(239, 68, 68, 0.12)',
+                                color: '#ef4444',
+                                width: 36,
+                                height: 36,
+                                '&:hover': {
+                                  bgcolor: 'rgba(239, 68, 68, 0.2)',
+                                  transform: 'scale(1.1)',
+                                },
                               }}
-                              onClick={() => handleProfileClick(item.data.sender._id)}
-                            />
-                            <Tooltip title="Delete Message" arrow>
-                              <IconButton
-                                className="delete-button"
-                                onClick={() => handleDeleteMessage(item.data._id)}
-                                sx={{
-                                  position: 'absolute',
-                                  top: '50%',
-                                  right: -40,
-                                  transform: 'translateY(-50%)',
-                                  opacity: 0,
-                                  transition: 'all 0.2s ease-in-out',
-                                  background: 'rgba(239, 68, 68, 0.1)',
-                                  color: '#ef4444',
-                                  borderRadius: '50%',
-                                  width: 28,
-                                  height: 28,
-                                  '&:hover': {
-                                    background: 'rgba(239, 68, 68, 0.2)',
-                                    color: '#dc2626',
-                                    transform: 'translateY(-50%) scale(1.1)',
-                                  },
-                                }}
-                                aria-label="Delete message"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </>
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         )}
                       </Box>
                     </Box>
@@ -447,15 +434,17 @@ export default function Chat() {
           </Box>
         )}
 
-        {/* Input area */}
+        {/* Input Area */}
         <Box
           component="form"
           onSubmit={handleSendMessage}
           sx={{
             display: 'flex',
             alignItems: 'center',
-            borderTop: '1px solid #e5e7eb',
-            pt: 1,
+            p: { xs: 2, sm: 3 },
+            pt: 2,
+            borderTop: '1px solid #e2e8f0',
+            bgcolor: 'white',
           }}
         >
           <TextField
@@ -464,36 +453,41 @@ export default function Chat() {
             placeholder="Type a message..."
             fullWidth
             variant="outlined"
-            size="small"
+            size="medium"
+            disabled={sending}
             sx={{
               '& .MuiOutlinedInput-root': {
-                borderRadius: '20px',
-                backgroundColor: '#fff',
-                '& fieldset': { borderColor: '#d1d5db' },
-                '&:hover fieldset': { borderColor: '#9ca3af' },
-                '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+                borderRadius: '28px',
+                bgcolor: '#f8fafc',
+                fontSize: '1rem',
+                pr: 1,
+                '& fieldset': { borderColor: '#cbd5e1' },
+                '&:hover fieldset': { borderColor: '#94a3b8' },
+                '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: 2 },
               },
             }}
             inputProps={{ 'aria-label': 'Message input', id: 'message-input' }}
-            disabled={sending}
           />
           <IconButton
             type="submit"
             disabled={sending || !newMessage.trim()}
             sx={{
-              ml: 1,
-              backgroundColor: '#3b82f6',
-              color: '#fff',
+              ml: 1.5,
+              bgcolor: '#6366f1',
+              color: 'white',
+              width: 56,
+              height: 56,
               borderRadius: '50%',
-              width: 45,
-              height: 45,
-              '&:hover': { backgroundColor: '#2563eb' },
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+              '&:hover': { bgcolor: '#4f46e5', transform: 'scale(1.05)' },
+              '&:disabled': { bgcolor: '#cbd5e1' },
+              transition: 'all 0.2s ease',
             }}
           >
             {sending ? (
-              <CircularProgress size={22} sx={{ color: '#fff' }} />
+              <CircularProgress size={28} thickness={5} sx={{ color: 'white' }} />
             ) : (
-              <SendIcon />
+              <SendIcon sx={{ fontSize: 28 }} />
             )}
           </IconButton>
         </Box>
@@ -504,85 +498,55 @@ export default function Chat() {
         open={deleteDialogOpen}
         onClose={handleCloseDialog}
         aria-labelledby="delete-dialog-title"
-        sx={{
-          '& .MuiDialog-paper': {
-            borderRadius: '16px',
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-            padding: '16px',
-            maxWidth: '400px',
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+            p: 2,
           },
         }}
-        TransitionComponent={motion.div}
-        transitionProps={{
-          initial: { opacity: 0, scale: 0.95 },
-          animate: { opacity: 1, scale: 1 },
-          exit: { opacity: 0, scale: 0.95 },
-          transition: { duration: 0.2, ease: 'easeOut' },
-        }}
       >
-        <DialogTitle
-          id="delete-dialog-title"
-          sx={{
-            fontWeight: 600,
-            fontSize: '1.25rem',
-            color: '#1e293b',
-            textAlign: 'center',
-            pb: 1,
-          }}
-        >
-          Delete Message
+        <DialogTitle id="delete-dialog-title" sx={{ textAlign: 'center', fontWeight: 700, fontSize: '1.3rem' }}>
+          Delete Message?
         </DialogTitle>
         <DialogContent>
-          <DialogContentText
-            sx={{
-              color: '#475569',
-              fontSize: '1rem',
-              textAlign: 'center',
-            }}
-          >
-            Are you sure you want to delete this message? This action cannot be undone.
+          <DialogContentText sx={{ textAlign: 'center', color: '#475569', fontSize: '1rem' }}>
+            This action cannot be undone.
           </DialogContentText>
         </DialogContent>
-        <DialogActions
-          sx={{
-            justifyContent: 'center',
-            gap: 2,
-            pb: 2,
-          }}
-        >
+        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 2 }}>
           <Button
             onClick={handleCloseDialog}
             sx={{
-              color: '#475569',
+              color: '#64748b',
+              fontWeight: 600,
+              px: 3,
+              py: 1.2,
+              borderRadius: 3,
               textTransform: 'none',
-              fontWeight: 500,
-              borderRadius: '12px',
-              padding: '8px 16px',
-              '&:hover': {
-                background: 'rgba(0, 0, 0, 0.05)',
-              },
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.05)' },
             }}
-            aria-label="Cancel deletion"
           >
             Cancel
           </Button>
           <Button
             onClick={confirmDeleteMessage}
+            variant="contained"
             sx={{
-              color: '#fff',
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              bgcolor: '#ef4444',
+              color: 'white',
+              fontWeight: 600,
+              px: 3,
+              py: 1.2,
+              borderRadius: 3,
               textTransform: 'none',
-              fontWeight: 500,
-              borderRadius: '12px',
-              padding: '8px 16px',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
-              },
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+              '&:hover': { bgcolor: '#dc2626' },
             }}
-            autoFocus
-            aria-label="Confirm deletion"
           >
             Delete
           </Button>
@@ -594,39 +558,24 @@ export default function Chat() {
         open={profileDialogOpen}
         onClose={handleCloseProfileDialog}
         aria-labelledby="profile-dialog-title"
-        sx={{
-          '& .MuiDialog-paper': {
-            borderRadius: '16px',
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-            padding: '16px',
-            maxWidth: '400px',
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+            p: 3,
           },
         }}
-        TransitionComponent={motion.div}
-        transitionProps={{
-          initial: { opacity: 0, scale: 0.95 },
-          animate: { opacity: 1, scale: 1 },
-          exit: { opacity: 0, scale: 0.95 },
-          transition: { duration: 0.2, ease: 'easeOut' },
-        }}
       >
-        <DialogTitle
-          id="profile-dialog-title"
-          sx={{
-            fontWeight: 600,
-            fontSize: '1.25rem',
-            color: '#1e293b',
-            textAlign: 'center',
-            pb: 1,
-          }}
-        >
+        <DialogTitle id="profile-dialog-title" sx={{ textAlign: 'center', fontWeight: 700, fontSize: '1.3rem' }}>
           User Profile
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ textAlign: 'center' }}>
           {selectedUser ? (
-            <Box sx={{ textAlign: 'center' }}>
+            <>
               <Avatar
                 src={
                   selectedUser.profilePhoto
@@ -635,51 +584,49 @@ export default function Chat() {
                 }
                 alt={selectedUser.name}
                 sx={{
-                  width: 80,
-                  height: 80,
-                  margin: 'auto',
+                  width: 90,
+                  height: 90,
+                  mx: 'auto',
                   mb: 2,
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                 }}
               />
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 600, color: '#1e293b', mb: 1 }}
-              >
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
                 {selectedUser.name}
               </Typography>
-              <Typography
-                variant="body1"
-                sx={{ color: '#475569', mb: 1 }}
-              >
+              <Typography variant="body1" sx={{ color: '#475569', mb: 1 }}>
                 {selectedUser.email}
               </Typography>
               <Typography
                 variant="body2"
-                sx={{ color: '#64748b', fontStyle: selectedUser.bio ? 'normal' : 'italic' }}
+                sx={{
+                  color: '#64748b',
+                  fontStyle: selectedUser.bio ? 'normal' : 'italic',
+                  mt: 1,
+                }}
               >
                 {selectedUser.bio || 'No bio available'}
               </Typography>
-            </Box>
+            </>
           ) : (
-            <CircularProgress size={30} />
+            <CircularProgress size={36} />
           )}
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
           <Button
             onClick={handleCloseProfileDialog}
+            variant="contained"
             sx={{
-              color: '#fff',
-              background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+              bgcolor: '#6366f1',
+              color: 'white',
+              fontWeight: 600,
+              px: 4,
+              py: 1.3,
+              borderRadius: 3,
               textTransform: 'none',
-              fontWeight: 500,
-              borderRadius: '12px',
-              padding: '8px 16px',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #2563eb, #1e40af)',
-              },
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+              '&:hover': { bgcolor: '#4f46e5' },
             }}
-            aria-label="Close profile"
           >
             Close
           </Button>
