@@ -21,17 +21,17 @@ export default function Welcome() {
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL;
 
-  // Dark mode state
-  const [darkMode, setDarkMode] = useState(false);
+  // Dark mode state — saved in localStorage
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem("darkMode");
+    if (saved !== null) return saved === "true";
+    // Default to system preference only on first visit
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
 
-  // Detect system preference
+  // Save to localStorage + apply to DOM
   useEffect(() => {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setDarkMode(prefersDark);
-  }, []);
-
-  // Apply dark mode to root
-  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
     if (darkMode) {
       document.documentElement.classList.add("dark");
       document.body.style.background = "#0f172a";
@@ -77,7 +77,7 @@ export default function Welcome() {
             border: darkMode ? "1px solid rgba(255,255,255,0.1)" : "none",
           }}
         >
-          {/* Premium Dark Mode Toggle – Inside Card, Top-Right */}
+          {/* Dark Mode Toggle – Top-Right Inside Card */}
           <Box
             sx={{
               position: "absolute",
