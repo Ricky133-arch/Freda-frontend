@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { useContext } from 'react';
@@ -15,11 +16,35 @@ function AppContent() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/auth" element={!user ? <AuthForm /> : <Navigate to="/welcome" replace />} />
-          <Route path="/welcome" element={user ? <Welcome /> : <Navigate to="/auth" replace />} />
-          <Route path="/profile" element={user ? <Profile /> : <Navigate to="/auth" replace />} />
-          <Route path="/chat/:chatId" element={user ? <Chat /> : <Navigate to="/auth" replace />} />
-          <Route path="/" element={<Navigate to={user ? "/welcome" : "/auth"} replace />} />
+          {/* Auth */}
+          <Route
+            path="/auth"
+            element={!user ? <AuthForm /> : <Navigate to="/welcome" replace />}
+          />
+
+          {/* Protected pages */}
+          <Route
+            path="/welcome"
+            element={user ? <Welcome /> : <Navigate to="/auth" replace />}
+          />
+          <Route
+            path="/profile"
+            element={user ? <Profile /> : <Navigate to="/auth" replace />}
+          />
+          {/* DM / Group chat – exact match on :chatId */}
+          <Route
+            path="/chat/:chatId"
+            element={user ? <Chat /> : <Navigate to="/auth" replace />}
+          />
+
+          {/* Root redirect */}
+          <Route
+            path="/"
+            element={<Navigate to={user ? '/welcome' : '/auth'} replace />}
+          />
+
+          {/* Catch-all – keep user inside the app */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </Router>
