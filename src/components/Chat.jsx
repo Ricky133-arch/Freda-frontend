@@ -1,6 +1,5 @@
-// src/components/Chat.jsx
 import { useState, useEffect, useContext, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
+import { useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,19 +19,13 @@ import {
   Button,
   Tooltip,
   Chip,
-  Badge,           // Added
-  Stack,           // Added
-  alpha,           // Added
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Added
-import LockIcon from '@mui/icons-material/Lock';           // Added
 import api from '../utils/api';
 
 export default function Chat() {
   const { chatId } = useParams();
-  const navigate = useNavigate(); // Added
   const { user } = useContext(AuthContext);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -42,37 +35,9 @@ export default function Chat() {
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [otherUser, setOtherUser] = useState(null); // Added for DM header
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const API_BASE = import.meta.env.VITE_API_URL;
-
-  // Detect DM (chatId like "123-456")
-  const isDM = chatId && chatId.includes('-') && chatId.split('-').length === 2;
-
-  // Generate DM ID (sorted)
-  const generateDMId = (id1, id2) => {
-    const [a, b] = [id1, id2].sort();
-    return `${a}-${b}`;
-  };
-
-  // Open DM
-  const openDM = async (tappedUserId) => {
-    if (isDM) return;
-    const dmId = generateDMId(user.id, tappedUserId);
-    try {
-      const res = await api.get(`/user/${tappedUserId}`);
-      setOtherUser(res.data);
-      navigate(`/chat/${dmId}`);
-    } catch (err) {
-      console.error('Open DM error:', err);
-    }
-  };
-
-  // Back to group
-  const goBackToGroup = () => {
-    navigate('/chat/default-chat');
-  };
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -152,20 +117,10 @@ export default function Chat() {
         setLoading(false);
       });
 
-    // Fetch other user in DM
-    if (isDM) {
-      const otherId = chatId.split('-').find(id => id !== user.id);
-      if (otherId) {
-        api.get(`/user/${otherId}`)
-          .then(res => setOtherUser(res.data))
-          .catch(() => {});
-      }
-    }
-
     return () => {
       socketRef.current.disconnect();
     };
-  }, [chatId, isDM, user.id]); // Added isDM & user.id
+  }, [chatId]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -204,18 +159,12 @@ export default function Chat() {
   };
 
   const handleProfileClick = async (userId) => {
-    if (isDM) {
-      // In DM: show profile
-      try {
-        const res = await api.get(`/user/${userId}`);
-        setSelectedUser(res.data);
-        setProfileDialogOpen(true);
-      } catch (err) {
-        console.error('Fetch profile error:', err);
-      }
-    } else {
-      // In group: open DM
-      openDM(userId);
+    try {
+      const res = await api.get(`/user/${userId}`);
+      setSelectedUser(res.data);
+      setProfileDialogOpen(true);
+    } catch (err) {
+      console.error('Fetch user profile error:', err);
     }
   };
 
@@ -241,7 +190,7 @@ export default function Chat() {
         fontFamily: '"Inter", system-ui, sans-serif',
       }}
     >
-      {/* Premium Header */}
+      {/* Header */}
       <Paper
         elevation={0}
         sx={{
@@ -250,93 +199,21 @@ export default function Chat() {
           mb: 2,
           bgcolor: 'white',
           boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          backdropFilter: 'blur(12px)',
-          border: '1px solid',
-          borderColor: isDM ? alpha('#8b5cf6', 0.3) : 'transparent',
-          background: isDM ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.08))' : 'white',
         }}
       >
-        {isDM && (
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <IconButton onClick={goBackToGroup} sx={{ color: '#8b5cf6' }}>
-              <ArrowBackIcon />
-            </IconButton>
-          </motion.div>
-        )}
-        <Box sx={{ flex: 1 }}>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              textAlign: isDM ? 'left' : 'center',
-              background: isDM
-                ? 'linear-gradient(90deg, #8b5cf6, #ec4899)'
-                : 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
-            {isDM ? (
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <LockIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
-                <span>{otherUser?.name || 'User'}</span>
-              </Stack>
-            ) : (
-              'Group Chat'
-            )}
-          </Typography>
-          {isDM && (
-            <Typography
-              variant="caption"
-              sx={{
-                color: '#8b5cf6',
-                fontWeight: 500,
-                display: 'block',
-                mt: 0.5,
-                opacity: 0.9,
-              }}
-            >
-              End-to-end encrypted
-            </Typography>
-          )}
-        </Box>
-        {isDM && otherUser?.profilePhoto && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.4, type: 'spring', stiffness: 300 }}
-          >
-            <Badge
-              overlap="circular"
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              badgeContent={
-                <Box
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    bgcolor: '#10b981',
-                    borderRadius: '50%',
-                    border: '2px solid white',
-                  }}
-                />
-              }
-            >
-              <Avatar
-                src={`${API_BASE}${otherUser.profilePhoto}?t=${Date.now()}`}
-                alt={otherUser.name}
-                sx={{ width: 44, height: 44, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-              />
-            </Badge>
-          </motion.div>
-        )}
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            textAlign: 'center',
+            background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+          }}
+        >
+          Group Chat
+        </Typography>
       </Paper>
 
       {/* Messages Container */}
@@ -351,7 +228,6 @@ export default function Chat() {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          border: isDM ? '1px solid rgba(139, 92, 246, 0.2)' : 'none',
         }}
       >
         {loading ? (
@@ -398,8 +274,8 @@ export default function Chat() {
                         label={formatDateLabel(item.date)}
                         size="small"
                         sx={{
-                          bgcolor: isDM ? alpha('#8b5cf6', 0.15) : 'rgba(99, 102, 241, 0.15)',
-                          color: isDM ? '#8b5cf6' : '#6366f1',
+                          bgcolor: 'rgba(99, 102, 241, 0.15)',
+                          color: '#6366f1',
                           fontWeight: 600,
                           fontSize: '0.75rem',
                           px: 2,
@@ -437,29 +313,23 @@ export default function Chat() {
                       >
                         {/* Avatar (others only) */}
                         {item.data.sender._id !== user.id && (
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <Avatar
-                              src={
-                                item.data.sender.profilePhoto
-                                  ? `${API_BASE}${item.data.sender.profilePhoto}?t=${Date.now()}`
-                                  : undefined
-                              }
-                              alt={item.data.sender.name}
-                              sx={{
-                                width: 40,
-                                height: 40,
-                                cursor: 'pointer',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                                transition: 'transform 0.2s',
-                                '&:hover': { transform: 'scale(1.05)' },
-                                border: isDM ? '2px solid #8b5cf6' : 'none',
-                              }}
-                              onClick={() => handleProfileClick(item.data.sender._id)}
-                            />
-                          </motion.div>
+                          <Avatar
+                            src={
+                              item.data.sender.profilePhoto
+                                ? `${API_BASE}${item.data.sender.profilePhoto}?t=${Date.now()}`
+                                : undefined
+                            }
+                            alt={item.data.sender.name}
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                              transition: 'transform 0.2s',
+                              '&:hover': { transform: 'scale(1.05)' },
+                            }}
+                            onClick={() => handleProfileClick(item.data.sender._id)}
+                          />
                         )}
 
                         {/* Message Bubble */}
@@ -469,7 +339,7 @@ export default function Chat() {
                             borderRadius: '20px',
                             background:
                               item.data.sender._id === user.id
-                                ? (isDM ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)')
+                                ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
                                 : '#ffffff',
                             color:
                               item.data.sender._id === user.id ? 'white' : '#1e293b',
@@ -490,7 +360,7 @@ export default function Chat() {
                               color:
                                 item.data.sender._id === user.id
                                   ? 'rgba(255, 255, 255, 0.95)'
-                                  : (isDM ? '#8b5cf6' : '#6366f1'),
+                                  : '#6366f1',
                               cursor: 'pointer',
                               '&:hover': { textDecoration: 'underline' },
                             }}
@@ -564,7 +434,7 @@ export default function Chat() {
           </Box>
         )}
 
-        {/* Premium Input Area */}
+        {/* Input Area */}
         <Box
           component="form"
           onSubmit={handleSendMessage}
@@ -575,13 +445,12 @@ export default function Chat() {
             pt: 2,
             borderTop: '1px solid #e2e8f0',
             bgcolor: 'white',
-            backdropFilter: 'blur(12px)',
           }}
         >
           <TextField
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={isDM ? "Send a secure message..." : "Type a message..."}
+            placeholder="Type a message..."
             fullWidth
             variant="outlined"
             size="medium"
@@ -592,40 +461,35 @@ export default function Chat() {
                 bgcolor: '#f8fafc',
                 fontSize: '1rem',
                 pr: 1,
-                '& fieldset': { borderColor: isDM ? '#8b5cf6' : '#cbd5e1' },
-                '&:hover fieldset': { borderColor: isDM ? '#a855f7' : '#94a3b8' },
-                '&.Mui-focused fieldset': { borderColor: isDM ? '#8b5cf6' : '#6366f1', borderWidth: 2 },
+                '& fieldset': { borderColor: '#cbd5e1' },
+                '&:hover fieldset': { borderColor: '#94a3b8' },
+                '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: 2 },
               },
             }}
             inputProps={{ 'aria-label': 'Message input', id: 'message-input' }}
           />
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <IconButton
+            type="submit"
+            disabled={sending || !newMessage.trim()}
+            sx={{
+              ml: 1.5,
+              bgcolor: '#6366f1',
+              color: 'white',
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+              '&:hover': { bgcolor: '#4f46e5', transform: 'scale(1.05)' },
+              '&:disabled': { bgcolor: '#cbd5e1' },
+              transition: 'all 0.2s ease',
+            }}
           >
-            <IconButton
-              type="submit"
-              disabled={sending || !newMessage.trim()}
-              sx={{
-                ml: 1.5,
-                bgcolor: isDM ? '#8b5cf6' : '#6366f1',
-                color: 'white',
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
-                boxShadow: `0 4px 12px ${isDM ? 'rgba(139, 92, 246, 0.4)' : 'rgba(99, 102, 241, 0.3)'}`,
-                '&:hover': { bgcolor: isDM ? '#7c3aed' : '#4f46e5' },
-                '&:disabled': { bgcolor: '#cbd5e1' },
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {sending ? (
-                <CircularProgress size={28} thickness={5} sx={{ color: 'white' }} />
-              ) : (
-                <SendIcon sx={{ fontSize: 28 }} />
-              )}
-            </IconButton>
-          </motion.div>
+            {sending ? (
+              <CircularProgress size={28} thickness={5} sx={{ color: 'white' }} />
+            ) : (
+              <SendIcon sx={{ fontSize: 28 }} />
+            )}
+          </IconButton>
         </Box>
       </Paper>
 
