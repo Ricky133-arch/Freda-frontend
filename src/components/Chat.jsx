@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
+import Picker from 'emoji-picker-react';
 import {
   Box,
   TextField,
@@ -19,10 +20,16 @@ import {
   Button,
   Tooltip,
   Chip,
+  Badge,
+  InputAdornment,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import api from '../utils/api';
+
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export default function Chat() {
   const { chatId } = useParams();
@@ -31,13 +38,16 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState(new Set());
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const fileInputRef = useRef(null);
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -94,6 +104,7 @@ export default function Chat() {
 
   useEffect(() => {
     socketRef.current = io(API_BASE, { withCredentials: true });
+    socketRef.current.emit('setOnline', user.id);
     socketRef.current.emit('joinChat', chatId);
 
     socketRef.current.on('newMessage', (message) => {
@@ -101,12 +112,21 @@ export default function Chat() {
       setTimeout(scrollToBottom, 100);
     });
 
-    socketRef.current.on('messageDeleted', ({ messageId }) => {
-      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+    socketRef.current.on('messageUpdated', (updated) => {
+      setMessages((prev) => prev.map(m => m._id === updated._id ? updated : m));
+    });
+
+    socketRef.current.on('userTyping', ({ userId, isTyping }) => {
+      setTypingUsers(prev => {
+        const next = new Set(prev);
+        if (isTyping) next.add(userId);
+        else next.delete(userId);
+        return next;
+      });
     });
 
     api
-      .get(`/chat/${chatId}`)
+      .get(`/api/chat/${chatId}/messages`)
       .then((res) => {
         setMessages(res.data);
         setLoading(false);
@@ -122,18 +142,50 @@ export default function Chat() {
     };
   }, [chatId]);
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
+  const sendMessage = (text = newMessage, type = 'text', mediaUrl = null, mediaType = null) => {
+    if (!text.trim() && type === 'text') return;
     setSending(true);
     socketRef.current.emit('sendMessage', {
       chatId,
-      text: newMessage,
-      sender: user.id,
-      type: 'text',
+      text,
+      type,
+      mediaUrl,
+      mediaType,
     });
     setNewMessage('');
+    setShowEmojiPicker(false);
     setSending(false);
+  };
+
+  const handleTyping = (e) => {
+    setNewMessage(e.target.value);
+    const isTyping = e.target.value.length > 0;
+    if (isTyping !== typing) {
+      socketRef.current.emit('typing', { chatId, isTyping });
+      setTyping(isTyping);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await api.post('/api/media/upload', formData);
+      sendMessage(
+        '',
+        file.type.startsWith('image') ? 'image' : file.type.startsWith('video') ? 'video' : 'audio',
+        res.data.url,
+        res.data.type
+      );
+    } catch (err) {
+      console.error('Upload failed:', err);
+    }
+  };
+
+  const reactToMessage = (messageId, emoji) => {
+    api.post(`/api/message/${messageId}/react`, { emoji });
   };
 
   const handleDeleteMessage = (messageId) => {
@@ -144,7 +196,7 @@ export default function Chat() {
   const confirmDeleteMessage = async () => {
     if (!messageToDelete) return;
     try {
-      await api.delete(`/chat/message/${messageToDelete}`);
+      await api.delete(`/api/chat/message/${messageToDelete}`);
       socketRef.current.emit('deleteMessage', { chatId, messageId: messageToDelete });
       setDeleteDialogOpen(false);
       setMessageToDelete(null);
@@ -160,7 +212,7 @@ export default function Chat() {
 
   const handleProfileClick = async (userId) => {
     try {
-      const res = await api.get(`/user/${userId}`);
+      const res = await api.get(`/api/user/${userId}`);
       setSelectedUser(res.data);
       setProfileDialogOpen(true);
     } catch (err) {
@@ -212,7 +264,7 @@ export default function Chat() {
             color: 'transparent',
           }}
         >
-          Group Chat
+          Chat
         </Typography>
       </Paper>
 
@@ -311,25 +363,39 @@ export default function Chat() {
                           maxWidth: '78%',
                         }}
                       >
-                        {/* Avatar (others only) */}
+                        {/* Avatar with Online Status */}
                         {item.data.sender._id !== user.id && (
-                          <Avatar
-                            src={
-                              item.data.sender.profilePhoto
-                                ? `${API_BASE}${item.data.sender.profilePhoto}?t=${Date.now()}`
-                                : undefined
-                            }
-                            alt={item.data.sender.name}
+                          <Badge
+                            overlap="circular"
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            variant="dot"
                             sx={{
-                              width: 40,
-                              height: 40,
-                              cursor: 'pointer',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                              transition: 'transform 0.2s',
-                              '&:hover': { transform: 'scale(1.05)' },
+                              '& .MuiBadge-badge': {
+                                backgroundColor: item.data.sender.onlineStatus ? '#44b700' : '#94a3b8',
+                                width: 12,
+                                height: 12,
+                                border: '2px solid white',
+                              },
                             }}
-                            onClick={() => handleProfileClick(item.data.sender._id)}
-                          />
+                          >
+                            <Avatar
+                              src={
+                                item.data.sender.profilePhoto
+                                  ? `${API_BASE}${item.data.sender.profilePhoto}?t=${Date.now()}`
+                                  : undefined
+                              }
+                              alt={item.data.sender.name}
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                                transition: 'transform 0.2s',
+                                '&:hover': { transform: 'scale(1.05)' },
+                              }}
+                              onClick={() => handleProfileClick(item.data.sender._id)}
+                            />
+                          </Badge>
                         )}
 
                         {/* Message Bubble */}
@@ -369,17 +435,53 @@ export default function Chat() {
                             {item.data.sender.name}
                           </Typography>
 
-                          {/* Message Text */}
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              fontSize: { xs: '0.95rem', sm: '1rem' },
-                              lineHeight: 1.5,
-                              fontWeight: 500,
-                            }}
-                          >
-                            {item.data.text}
-                          </Typography>
+                          {/* Media Content */}
+                          {item.data.type === 'image' && (
+                            <Box sx={{ my: 1, borderRadius: 3, overflow: 'hidden' }}>
+                              <img
+                                src={`${API_BASE}${item.data.mediaUrl}`}
+                                alt="sent"
+                                style={{ maxWidth: '100%', borderRadius: 12, display: 'block' }}
+                              />
+                            </Box>
+                          )}
+                          {item.data.type === 'video' && (
+                            <Box sx={{ my: 1, borderRadius: 3, overflow: 'hidden' }}>
+                              <video
+                                src={`${API_BASE}${item.data.mediaUrl}`}
+                                controls
+                                style={{ maxWidth: '100%', borderRadius: 12 }}
+                              />
+                            </Box>
+                          )}
+                          {item.data.type === 'audio' && (
+                            <Box sx={{ my: 1 }}>
+                              <audio src={`${API_BASE}${item.data.mediaUrl}`} controls />
+                            </Box>
+                          )}
+
+                          {/* Text */}
+                          {item.data.text && (
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontSize: { xs: '0.95rem', sm: '1rem' },
+                                lineHeight: 1.5,
+                                fontWeight: 500,
+                              }}
+                            >
+                              {item.data.text}
+                            </Typography>
+                          )}
+
+                          {/* Reactions */}
+                          {item.data.reactions?.length > 0 && (
+                            <Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                              {item.data.reactions.map((r, i) => (
+                                <Chip key={i} label={r.emoji} size="small" />
+                              ))}
+                            </Box>
+                          )}
 
                           {/* Timestamp */}
                           <Typography
@@ -401,7 +503,7 @@ export default function Chat() {
                           </Typography>
                         </Box>
 
-                        {/* Delete Button (own message) */}
+                        {/* Delete Button */}
                         {item.data.sender._id === user.id && (
                           <Tooltip title="Delete Message" arrow>
                             <IconButton
@@ -426,10 +528,43 @@ export default function Chat() {
                         )}
                       </Box>
                     </Box>
+
+                    {/* Reaction Picker (for others' messages) */}
+                    {item.data.sender._id !== user.id && (
+                      <Box sx={{ display: 'flex', gap: 1, mt: 1, ml: 6 }}>
+                        {['Like', 'Love', 'Haha', 'Wow', 'Sad', 'Angry'].map((e) => (
+                          <Button
+                            key={e}
+                            size="small"
+                            variant="outlined"
+                            onClick={() => reactToMessage(item.data._id, e)}
+                            sx={{ minWidth: 40, fontSize: '0.75rem' }}
+                          >
+                            {e}
+                          </Button>
+                        ))}
+                      </Box>
+                    )}
                   </motion.div>
                 )
               )}
             </AnimatePresence>
+
+            {/* Typing Indicator */}
+            {typingUsers.size > 0 && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ ml: 6, my: 2, fontStyle: 'italic' }}
+              >
+                {Array.from(typingUsers)
+                  .map((id) => messages.find((m) => m.sender._id === id)?.sender.name)
+                  .filter(Boolean)
+                  .join(', ')}{' '}
+                is typing...
+              </Typography>
+            )}
+
             <div ref={messagesEndRef} />
           </Box>
         )}
@@ -437,7 +572,10 @@ export default function Chat() {
         {/* Input Area */}
         <Box
           component="form"
-          onSubmit={handleSendMessage}
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage();
+          }}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -445,11 +583,23 @@ export default function Chat() {
             pt: 2,
             borderTop: '1px solid #e2e8f0',
             bgcolor: 'white',
+            position: 'relative',
           }}
         >
+          {showEmojiPicker && (
+            <Box sx={{ position: 'absolute', bottom: 80, left: 20, zIndex: 10 }}>
+              <Picker
+                onEmojiClick={(e) => {
+                  setNewMessage((prev) => prev + e.emoji);
+                  setShowEmojiPicker(false);
+                }}
+              />
+            </Box>
+          )}
+
           <TextField
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleTyping}
             placeholder="Type a message..."
             fullWidth
             variant="outlined"
@@ -466,8 +616,28 @@ export default function Chat() {
                 '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: 2 },
               },
             }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IconButton onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                    <EmojiEmotionsIcon />
+                  </IconButton>
+                  <IconButton onClick={() => fileInputRef.current.click()}>
+                    <AttachFileIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
             inputProps={{ 'aria-label': 'Message input', id: 'message-input' }}
           />
+          <input
+            type="file"
+            hidden
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="image/*,video/*,audio/*"
+          />
+
           <IconButton
             type="submit"
             disabled={sending || !newMessage.trim()}
@@ -607,6 +777,11 @@ export default function Chat() {
               >
                 {selectedUser.bio || 'No bio available'}
               </Typography>
+              {selectedUser.onlineStatus && (
+                <Typography variant="caption" color="success.main" sx={{ mt: 1 }}>
+                  ● Online
+                </Typography>
+              )}
             </>
           ) : (
             <CircularProgress size={36} />
