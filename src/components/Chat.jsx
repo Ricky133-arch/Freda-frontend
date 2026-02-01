@@ -30,7 +30,6 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [chatTitle, setChatTitle] = useState('Group Chat');
   const [sending, setSending] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState(null);
@@ -111,20 +110,6 @@ export default function Chat() {
       .then((res) => {
         setMessages(res.data);
         setLoading(false);
-        // If this is a direct conversation, fetch the other participant's name for the header
-        try {
-          if (typeof chatId === 'string' && chatId.startsWith('direct-') && user?.id) {
-            const parts = chatId.split('-').slice(1);
-            const otherId = parts.find((p) => p !== user.id) || parts[0];
-            api.get(`/user/${otherId}`).then((u) => {
-              setChatTitle(u.data.name || 'Direct Message');
-            }).catch(() => setChatTitle('Direct Message'));
-          } else {
-            setChatTitle('Group Chat');
-          }
-        } catch (e) {
-          setChatTitle('Chat');
-        }
         setTimeout(scrollToBottom, 100);
       })
       .catch((err) => {
@@ -227,7 +212,7 @@ export default function Chat() {
             color: 'transparent',
           }}
         >
-          {chatTitle}
+          Group Chat
         </Typography>
       </Paper>
 
