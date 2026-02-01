@@ -52,14 +52,15 @@ export default function DirectMessages() {
     socketRef.current = io(API_BASE, { withCredentials: true });
     socketRef.current.on('newMessage', (message) => {
       // Update conversation with new message
-      setConversations((prev) =>
-        prev.map((conv) =>
+      setConversations((prev) => {
+        const updated = prev.map((conv) =>
           conv.conversationId === message.chatId
             ? { ...conv, lastMessageTime: new Date(), lastMessage: message }
             : conv
-        )
-      ).sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime))
-    );
+        );
+        return updated.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+      });
+    });
 
     return () => {
       socketRef.current?.disconnect();
