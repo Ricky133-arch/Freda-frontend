@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,6 +26,7 @@ import api from '../utils/api';
 
 export default function Chat() {
   const { chatId } = useParams();
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -160,17 +161,30 @@ export default function Chat() {
 
   const handleProfileClick = async (userId) => {
     try {
-      const res = await api.get(`/user/${userId}`);
-      setSelectedUser(res.data);
-      setProfileDialogOpen(true);
+      // Directly open DM with this user
+      const res = await api.post('/chat/direct/start', { recipientId: userId });
+      navigate(`/direct-message/${res.data.conversationId}`);
     } catch (err) {
-      console.error('Fetch user profile error:', err);
+      console.error('Start DM error:', err);
     }
   };
 
   const handleCloseProfileDialog = () => {
     setProfileDialogOpen(false);
     setSelectedUser(null);
+  };
+
+  const handleStartDirectMessage = async () => {
+    if (!selectedUser) return;
+    try {
+      const res = await api.post('/chat/direct/start', { recipientId: selectedUser.id });
+      const conversation = res.data;
+      // Navigate to direct message with the conversation ID
+      navigate(`/direct-message/${conversation.conversationId}`);
+      handleCloseProfileDialog();
+    } catch (err) {
+      console.error('Start direct message error:', err);
+    }
   };
 
   return (
@@ -612,7 +626,24 @@ export default function Chat() {
             <CircularProgress size={36} />
           )}
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
+        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 2 }}>
+          <Button
+            onClick={handleStartDirectMessage}
+            variant="contained"
+            sx={{
+              bgcolor: '#10b981',
+              color: 'white',
+              fontWeight: 600,
+              px: 4,
+              py: 1.3,
+              borderRadius: 3,
+              textTransform: 'none',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+              '&:hover': { bgcolor: '#059669' },
+            }}
+          >
+            Message
+          </Button>
           <Button
             onClick={handleCloseProfileDialog}
             variant="contained"
