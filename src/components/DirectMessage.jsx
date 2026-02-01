@@ -22,10 +22,11 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import api from '../utils/api';
 
-export default function Chat() {
-  const { chatId } = useParams();
+export default function DirectMessage() {
+  const { conversationId } = useParams();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [messages, setMessages] = useState([]);
@@ -34,8 +35,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState(null);
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [otherUser, setOtherUser] = useState(null);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const API_BASE = import.meta.env.VITE_API_URL;
@@ -95,7 +95,7 @@ export default function Chat() {
 
   useEffect(() => {
     socketRef.current = io(API_BASE, { withCredentials: true });
-    socketRef.current.emit('joinChat', chatId);
+    socketRef.current.emit('joinChat', conversationId);
 
     socketRef.current.on('newMessage', (message) => {
       setMessages((prev) => [...prev, message]);
@@ -106,32 +106,48 @@ export default function Chat() {
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
     });
 
-    api
-      .get(`/chat/${chatId}`)
-      .then((res) => {
-        setMessages(res.data);
+    // Fetch initial messages and conversation info
+    Promise.all([
+      api.get(`/chat/${conversationId}`),
+      fetchConversationInfo(),
+    ])
+      .then(([messagesRes]) => {
+        setMessages(messagesRes.data);
         setLoading(false);
         setTimeout(scrollToBottom, 100);
       })
       .catch((err) => {
-        console.error('Fetch messages error:', err);
+        console.error('Fetch error:', err);
         setLoading(false);
       });
 
     return () => {
       socketRef.current.disconnect();
     };
-  }, [chatId]);
+  }, [conversationId]);
+
+  const fetchConversationInfo = async () => {
+    try {
+      // Extract user IDs from conversationId (format: direct-userId1-userId2)
+      const parts = conversationId.split('-');
+      const otherUserId = parts[1] === user.id ? parts[2] : parts[1];
+      
+      const res = await api.get(`/user/${otherUserId}`);
+      setOtherUser(res.data);
+    } catch (err) {
+      console.error('Fetch conversation info error:', err);
+    }
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     setSending(true);
     socketRef.current.emit('sendMessage', {
-      chatId,
+      chatId: conversationId,
       text: newMessage,
       sender: user.id,
-      type: 'text',
+      type: 'direct',
     });
     setNewMessage('');
     setSending(false);
@@ -146,7 +162,7 @@ export default function Chat() {
     if (!messageToDelete) return;
     try {
       await api.delete(`/chat/message/${messageToDelete}`);
-      socketRef.current.emit('deleteMessage', { chatId, messageId: messageToDelete });
+      socketRef.current.emit('deleteMessage', { chatId: conversationId, messageId: messageToDelete });
       setDeleteDialogOpen(false);
       setMessageToDelete(null);
     } catch (err) {
@@ -157,34 +173,6 @@ export default function Chat() {
   const handleCloseDialog = () => {
     setDeleteDialogOpen(false);
     setMessageToDelete(null);
-  };
-
-  const handleProfileClick = async (userId) => {
-    try {
-      const res = await api.get(`/user/${userId}`);
-      setSelectedUser(res.data);
-      setProfileDialogOpen(true);
-    } catch (err) {
-      console.error('Fetch user profile error:', err);
-    }
-  };
-
-  const handleCloseProfileDialog = () => {
-    setProfileDialogOpen(false);
-    setSelectedUser(null);
-  };
-
-  const handleStartDirectMessage = async () => {
-    if (!selectedUser) return;
-    try {
-      const res = await api.post('/chat/direct/start', { recipientId: selectedUser.id });
-      const conversation = res.data;
-      // Navigate to direct message with the conversation ID
-      navigate(`/direct-message/${conversation.conversationId}`);
-      handleCloseProfileDialog();
-    } catch (err) {
-      console.error('Start direct message error:', err);
-    }
   };
 
   return (
@@ -213,21 +201,59 @@ export default function Chat() {
           mb: 2,
           bgcolor: 'white',
           boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
         }}
       >
-        <Typography
-          variant="h5"
+        <IconButton
+          onClick={() => navigate(-1)}
           sx={{
-            fontWeight: 700,
-            textAlign: 'center',
-            background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            color: 'transparent',
+            color: '#6366f1',
+            '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.1)' },
           }}
         >
-          Group Chat
-        </Typography>
+          <ArrowBackIcon />
+        </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+          {otherUser && (
+            <>
+              <Avatar
+                src={
+                  otherUser.profilePhoto
+                    ? `${API_BASE}${otherUser.profilePhoto}?t=${Date.now()}`
+                    : undefined
+                }
+                alt={otherUser.name}
+                sx={{
+                  width: 48,
+                  height: 48,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                }}
+              />
+              <Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    color: '#1e293b',
+                    margin: 0,
+                  }}
+                >
+                  {otherUser.name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#94a3b8',
+                  }}
+                >
+                  {otherUser.email}
+                </Typography>
+              </Box>
+            </>
+          )}
+        </Box>
       </Paper>
 
       {/* Messages Container */}
@@ -325,27 +351,6 @@ export default function Chat() {
                           maxWidth: '78%',
                         }}
                       >
-                        {/* Avatar (others only) */}
-                        {item.data.sender._id !== user.id && (
-                          <Avatar
-                            src={
-                              item.data.sender.profilePhoto
-                                ? `${API_BASE}${item.data.sender.profilePhoto}?t=${Date.now()}`
-                                : undefined
-                            }
-                            alt={item.data.sender.name}
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              cursor: 'pointer',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                              transition: 'transform 0.2s',
-                              '&:hover': { transform: 'scale(1.05)' },
-                            }}
-                            onClick={() => handleProfileClick(item.data.sender._id)}
-                          />
-                        )}
-
                         {/* Message Bubble */}
                         <Box
                           sx={{
@@ -363,26 +368,6 @@ export default function Chat() {
                             wordBreak: 'break-word',
                           }}
                         >
-                          {/* Sender Name */}
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: 'block',
-                              fontWeight: 700,
-                              fontSize: '0.8rem',
-                              mb: 0.6,
-                              color:
-                                item.data.sender._id === user.id
-                                  ? 'rgba(255, 255, 255, 0.95)'
-                                  : '#6366f1',
-                              cursor: 'pointer',
-                              '&:hover': { textDecoration: 'underline' },
-                            }}
-                            onClick={() => handleProfileClick(item.data.sender._id)}
-                          >
-                            {item.data.sender.name}
-                          </Typography>
-
                           {/* Message Text */}
                           <Typography
                             variant="body1"
@@ -563,103 +548,6 @@ export default function Chat() {
             }}
           >
             Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Profile Dialog */}
-      <Dialog
-        open={profileDialogOpen}
-        onClose={handleCloseProfileDialog}
-        aria-labelledby="profile-dialog-title"
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            bgcolor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(16px)',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
-            p: 3,
-          },
-        }}
-      >
-        <DialogTitle id="profile-dialog-title" sx={{ textAlign: 'center', fontWeight: 700, fontSize: '1.3rem' }}>
-          User Profile
-        </DialogTitle>
-        <DialogContent sx={{ textAlign: 'center' }}>
-          {selectedUser ? (
-            <>
-              <Avatar
-                src={
-                  selectedUser.profilePhoto
-                    ? `${API_BASE}${selectedUser.profilePhoto}?t=${Date.now()}`
-                    : undefined
-                }
-                alt={selectedUser.name}
-                sx={{
-                  width: 90,
-                  height: 90,
-                  mx: 'auto',
-                  mb: 2,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                }}
-              />
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                {selectedUser.name}
-              </Typography>
-              <Typography variant="body1" sx={{ color: '#475569', mb: 1 }}>
-                {selectedUser.email}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#64748b',
-                  fontStyle: selectedUser.bio ? 'normal' : 'italic',
-                  mt: 1,
-                }}
-              >
-                {selectedUser.bio || 'No bio available'}
-              </Typography>
-            </>
-          ) : (
-            <CircularProgress size={36} />
-          )}
-        </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 2 }}>
-          <Button
-            onClick={handleStartDirectMessage}
-            variant="contained"
-            sx={{
-              bgcolor: '#10b981',
-              color: 'white',
-              fontWeight: 600,
-              px: 4,
-              py: 1.3,
-              borderRadius: 3,
-              textTransform: 'none',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-              '&:hover': { bgcolor: '#059669' },
-            }}
-          >
-            Message
-          </Button>
-          <Button
-            onClick={handleCloseProfileDialog}
-            variant="contained"
-            sx={{
-              bgcolor: '#6366f1',
-              color: 'white',
-              fontWeight: 600,
-              px: 4,
-              py: 1.3,
-              borderRadius: 3,
-              textTransform: 'none',
-              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-              '&:hover': { bgcolor: '#4f46e5' },
-            }}
-          >
-            Close
           </Button>
         </DialogActions>
       </Dialog>
