@@ -34,8 +34,6 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState(null);
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const API_BASE = import.meta.env.VITE_API_URL;
@@ -161,31 +159,14 @@ export default function Chat() {
 
   const handleProfileClick = async (userId) => {
     try {
-      const res = await api.get(`/user/${userId}`);
-      setSelectedUser(res.data);
-      setProfileDialogOpen(true);
+      // Directly open DM with this user
+      const res = await api.post('/chat/direct/start', { recipientId: userId });
+      navigate(`/direct-message/${res.data.conversationId}`);
     } catch (err) {
-      console.error('Fetch user profile error:', err);
+      console.error('Start DM error:', err);
     }
   };
 
-  const handleCloseProfileDialog = () => {
-    setProfileDialogOpen(false);
-    setSelectedUser(null);
-  };
-
-  const handleStartDirectMessage = async () => {
-    if (!selectedUser) return;
-    try {
-      const res = await api.post('/chat/direct/start', { recipientId: selectedUser.id });
-      const conversation = res.data;
-      // Navigate to direct message with the conversation ID
-      navigate(`/direct-message/${conversation.conversationId}`);
-      handleCloseProfileDialog();
-    } catch (err) {
-      console.error('Start direct message error:', err);
-    }
-  };
 
   return (
     <motion.div
@@ -563,103 +544,6 @@ export default function Chat() {
             }}
           >
             Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Profile Dialog */}
-      <Dialog
-        open={profileDialogOpen}
-        onClose={handleCloseProfileDialog}
-        aria-labelledby="profile-dialog-title"
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            bgcolor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(16px)',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
-            p: 3,
-          },
-        }}
-      >
-        <DialogTitle id="profile-dialog-title" sx={{ textAlign: 'center', fontWeight: 700, fontSize: '1.3rem' }}>
-          User Profile
-        </DialogTitle>
-        <DialogContent sx={{ textAlign: 'center' }}>
-          {selectedUser ? (
-            <>
-              <Avatar
-                src={
-                  selectedUser.profilePhoto
-                    ? `${API_BASE}${selectedUser.profilePhoto}?t=${Date.now()}`
-                    : undefined
-                }
-                alt={selectedUser.name}
-                sx={{
-                  width: 90,
-                  height: 90,
-                  mx: 'auto',
-                  mb: 2,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                }}
-              />
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                {selectedUser.name}
-              </Typography>
-              <Typography variant="body1" sx={{ color: '#475569', mb: 1 }}>
-                {selectedUser.email}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#64748b',
-                  fontStyle: selectedUser.bio ? 'normal' : 'italic',
-                  mt: 1,
-                }}
-              >
-                {selectedUser.bio || 'No bio available'}
-              </Typography>
-            </>
-          ) : (
-            <CircularProgress size={36} />
-          )}
-        </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 2 }}>
-          <Button
-            onClick={handleStartDirectMessage}
-            variant="contained"
-            sx={{
-              bgcolor: '#10b981',
-              color: 'white',
-              fontWeight: 600,
-              px: 4,
-              py: 1.3,
-              borderRadius: 3,
-              textTransform: 'none',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-              '&:hover': { bgcolor: '#059669' },
-            }}
-          >
-            Message
-          </Button>
-          <Button
-            onClick={handleCloseProfileDialog}
-            variant="contained"
-            sx={{
-              bgcolor: '#6366f1',
-              color: 'white',
-              fontWeight: 600,
-              px: 4,
-              py: 1.3,
-              borderRadius: 3,
-              textTransform: 'none',
-              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-              '&:hover': { bgcolor: '#4f46e5' },
-            }}
-          >
-            Close
           </Button>
         </DialogActions>
       </Dialog>
