@@ -9,22 +9,17 @@ import {
   Box,
   Avatar,
   Switch,
-  Tabs,
-  Tab,
 } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ChatIcon from "@mui/icons-material/Chat";
 import PersonIcon from "@mui/icons-material/Person";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
-import MailIcon from "@mui/icons-material/Mail";
-import GroupsIcon from "@mui/icons-material/Groups";
 
 export default function Welcome() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL;
-  const [activeTab, setActiveTab] = useState(0);
 
   // Dark mode state — saved in localStorage
   const [darkMode, setDarkMode] = useState(() => {
@@ -187,7 +182,7 @@ export default function Welcome() {
           <Typography
             variant="body1"
             sx={{
-              mb: 4,
+              mb: 5,
               fontSize: "1.1rem",
               color: darkMode ? "#cbd5e1" : "text.secondary",
             }}
@@ -195,141 +190,65 @@ export default function Welcome() {
             Ready to connect and chat?
           </Typography>
 
-          {/* Tabs */}
-          <Box sx={{ mb: 4, borderBottom: `1px solid ${darkMode ? '#334155' : '#e2e8f0'}` }}>
-            <Tabs
-              value={activeTab}
-              onChange={(e, newValue) => setActiveTab(newValue)}
+          {/* Action Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              component={motion.button}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+              variant="contained"
+              size="large"
+              startIcon={<ChatIcon />}
+              onClick={() => navigate("/chat/default-chat")}
               sx={{
-                '& .MuiTab-root': {
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  color: darkMode ? '#94a3b8' : '#64748b',
-                  '&.Mui-selected': {
-                    color: '#6366f1',
-                  },
-                },
-                '& .MuiTabs-indicator': {
-                  backgroundColor: '#6366f1',
+                py: 2,
+                borderRadius: 3,
+                fontWeight: 600,
+                textTransform: "none",
+                fontSize: "1.1rem",
+                background: darkMode
+                  ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
+                  : "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                boxShadow: darkMode
+                  ? "0 6px 16px rgba(99, 102, 241, 0.4)"
+                  : "0 6px 16px rgba(99, 102, 241, 0.3)",
+                "&:hover": {
+                  background: darkMode
+                    ? "linear-gradient(135deg, #5b5ce0, #7c3aed)"
+                    : "linear-gradient(135deg, #5b5ce0, #7c3aed)",
                 },
               }}
             >
-              <Tab icon={<MailIcon />} iconPosition="start" label="Messages" />
-              <Tab icon={<GroupsIcon />} iconPosition="start" label="Group Chat" />
-            </Tabs>
-          </Box>
+              Start Chatting
+            </Button>
 
-          {/* Tab Content */}
-          {activeTab === 0 ? (
-            // Messages Tab
-            <Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: darkMode ? '#cbd5e1' : '#475569',
-                  mb: 3,
-                }}
-              >
-                Direct messages with your contacts
-              </Typography>
-              <Button
-                component={motion.button}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                variant="contained"
-                fullWidth
-                size="large"
-                startIcon={<ChatIcon />}
-                onClick={() => navigate("/messages")}
-                sx={{
-                  py: 2,
-                  borderRadius: 3,
-                  fontWeight: 600,
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  boxShadow: darkMode
-                    ? "0 6px 16px rgba(16, 185, 129, 0.4)"
-                    : "0 6px 16px rgba(16, 185, 129, 0.3)",
-                  "&:hover": {
-                    background: 'linear-gradient(135deg, #059669, #047857)',
-                  },
-                }}
-              >
-                Open Messages
-              </Button>
-            </Box>
-          ) : (
-            // Group Chat Tab
-            <Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: darkMode ? '#cbd5e1' : '#475569',
-                  mb: 3,
-                }}
-              >
-                Chat with your entire team or group
-              </Typography>
-              <Button
-                component={motion.button}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                variant="contained"
-                fullWidth
-                size="large"
-                startIcon={<ChatIcon />}
-                onClick={() => navigate("/chat/default-chat")}
-                sx={{
-                  py: 2,
-                  borderRadius: 3,
-                  fontWeight: 600,
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  boxShadow: darkMode
-                    ? "0 6px 16px rgba(99, 102, 241, 0.4)"
-                    : "0 6px 16px rgba(99, 102, 241, 0.3)",
-                  "&:hover": {
-                    background: 'linear-gradient(135deg, #5b5ce0, #7c3aed)',
-                  },
-                }}
-              >
-                Start Group Chat
-              </Button>
-            </Box>
-          )}
-
-          {/* Edit Profile Button */}
-          <Button
-            component={motion.button}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.98 }}
-            variant="outlined"
-            fullWidth
-            size="large"
-            startIcon={<PersonIcon />}
-            onClick={() => navigate("/profile")}
-            sx={{
-              mt: 3,
-              py: 2,
-              borderRadius: 3,
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: "1rem",
-              borderColor: darkMode ? "#8b5cf6" : "#6366f1",
-              color: darkMode ? "#8b5cf6" : "#6366f1",
-              "&:hover": {
-                borderColor: darkMode ? "#a855f7" : "#4f46e5",
-                bgcolor: darkMode
-                  ? "rgba(139, 92, 246, 0.2)"
-                  : "rgba(99, 102, 241, 0.08)",
-              },
-            }}
-          >
-            Edit Profile
-          </Button>
+            <Button
+              component={motion.button}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+              variant="outlined"
+              size="large"
+              startIcon={<PersonIcon />}
+              onClick={() => navigate("/profile")}
+              sx={{
+                py: 2,
+                borderRadius: 3,
+                fontWeight: 600,
+                textTransform: "none",
+                fontSize: "1.1rem",
+                borderColor: darkMode ? "#8b5cf6" : "#6366f1",
+                color: darkMode ? "#8b5cf6" : "#6366f1",
+                "&:hover": {
+                  borderColor: darkMode ? "#a855f7" : "#4f46e5",
+                  bgcolor: darkMode
+                    ? "rgba(139, 92, 246, 0.2)"
+                    : "rgba(99, 102, 241, 0.08)",
+                },
+              }}
+            >
+              Edit Profile
+            </Button>
+          </div>
 
           {/* Logout (Bottom) */}
           <Box sx={{ mt: 6 }}>
