@@ -5,8 +5,6 @@ import AuthForm from './components/AuthForm.jsx';
 import Welcome from './components/Welcome.jsx';
 import Profile from './components/Profile.jsx';
 import Chat from './components/Chat.jsx';
-import DirectMessage from './components/DirectMessage.jsx';
-import DirectMessages from './components/DirectMessages.jsx';
 import { motion } from 'framer-motion';
 
 function AppContent() {
@@ -20,9 +18,7 @@ function AppContent() {
           <Route path="/auth" element={!user ? <AuthForm /> : <Navigate to="/welcome" replace />} />
           <Route path="/welcome" element={user ? <Welcome /> : <Navigate to="/auth" replace />} />
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/auth" replace />} />
-          <Route path="/messages" element={user ? <DirectMessages /> : <Navigate to="/auth" replace />} />
           <Route path="/chat/:chatId" element={user ? <Chat /> : <Navigate to="/auth" replace />} />
-          <Route path="/direct-message/:conversationId" element={user ? <DirectMessage /> : <Navigate to="/auth" replace />} />
           <Route path="/" element={<Navigate to={user ? "/welcome" : "/auth"} replace />} />
         </Routes>
       </div>
